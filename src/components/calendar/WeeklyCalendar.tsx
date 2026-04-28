@@ -15,8 +15,8 @@ type CalView = 'day' | 'week' | 'month'
 
 const DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6) // 06:00–23:00
-const HOUR_H = 60 // px per hour
-const DAY_START = 6 // first visible hour
+const HOUR_H = 56 // px per hour
+const DAY_START = 6
 
 function getUserColor(b: Booking): string {
   return b.profiles?.color ?? '#7C6FF7'
@@ -37,7 +37,7 @@ function getTimeSlot(b: Booking, day: Date): { top: number; height: number } {
   const cEnd = Math.min(endH, DAY_START + HOURS.length)
   return {
     top: (cStart - DAY_START) * HOUR_H,
-    height: Math.max((cEnd - cStart) * HOUR_H, 40),
+    height: Math.max((cEnd - cStart) * HOUR_H, 36),
   }
 }
 
@@ -107,7 +107,7 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
       {/* ===== HEADER ===== */}
       <div className="bg-white shadow-card px-4 pt-14 pb-3 z-10">
 
-        {/* Nav row — RTL: first child = right = prev, last child = left = next */}
+        {/* Nav row */}
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={prev}
@@ -149,45 +149,12 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
           ))}
         </div>
 
-        {/* Day-name headers — shown for week + month */}
-        {view !== 'day' && (
+        {/* Month-view day-name headers */}
+        {view === 'month' && (
           <div className="grid grid-cols-7">
             {DAY_NAMES.map((n, i) => (
               <div key={i} className="text-center text-[10px] font-semibold text-textMuted py-1">{n}</div>
             ))}
-          </div>
-        )}
-
-        {/* Week-view day-selector row */}
-        {view === 'week' && (
-          <div className="grid grid-cols-7 gap-0.5">
-            {weekDays.map((day, i) => {
-              const sel = selected ? isSameDay(day, selected) : false
-              const today = isToday(day)
-              const dots = approved.filter(b => overlapsDay(b, day)).slice(0, 3)
-              return (
-                <button
-                  key={i}
-                  onClick={() => selectDay(day)}
-                  className={`flex flex-col items-center py-2 rounded-2xl transition-all duration-150 active:scale-95
-                    ${sel ? 'bg-primary-500' : today ? 'bg-primary-50 ring-1 ring-primary-200' : 'hover:bg-background'}`}
-                >
-                  <span className={`text-sm font-bold leading-none
-                    ${sel ? 'text-white' : today ? 'text-primary-600' : 'text-textBase'}`}>
-                    {format(day, 'd')}
-                  </span>
-                  <div className="flex gap-0.5 mt-1.5 h-1.5">
-                    {dots.map(b => (
-                      <span
-                        key={b.id}
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: sel ? 'rgba(255,255,255,0.75)' : getUserColor(b) }}
-                      />
-                    ))}
-                  </div>
-                </button>
-              )
-            })}
           </div>
         )}
       </div>
@@ -203,11 +170,7 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
             allBookings={bookings}
           />
         ) : view === 'week' ? (
-          <DayDetailPanel
-            selected={selected}
-            selectedBookings={selectedBookings}
-            onNavigate={onNavigate}
-          />
+          <WeekBody weekDays={weekDays} approved={approved} bookings={bookings} />
         ) : (
           <MonthBody
             monthDates={monthDates}
@@ -256,7 +219,6 @@ function DayBody({
 
   return (
     <div className="pb-28">
-      {/* Timeline — use LTR so time labels are always on the left */}
       <div className="flex" dir="ltr">
         {/* Hour labels */}
         <div className="w-14 flex-shrink-0 select-none">
@@ -273,24 +235,13 @@ function DayBody({
 
         {/* Grid + events */}
         <div className="flex-1 relative border-r border-border" style={{ height: HOURS.length * HOUR_H }}>
-          {/* Hour lines */}
           {HOURS.map((_, i) => (
-            <div
-              key={i}
-              className="absolute left-0 right-0 border-t border-border/50"
-              style={{ top: i * HOUR_H }}
-            />
+            <div key={i} className="absolute left-0 right-0 border-t border-border/50" style={{ top: i * HOUR_H }} />
           ))}
-          {/* Half-hour dashed lines */}
           {HOURS.map((_, i) => (
-            <div
-              key={`h${i}`}
-              className="absolute left-0 right-0 border-t border-dashed border-border/25"
-              style={{ top: i * HOUR_H + HOUR_H / 2 }}
-            />
+            <div key={`h${i}`} className="absolute left-0 right-0 border-t border-dashed border-border/25" style={{ top: i * HOUR_H + HOUR_H / 2 }} />
           ))}
 
-          {/* Approved booking blocks */}
           {approved.map(b => {
             const { top, height } = getTimeSlot(b, day)
             const color = getUserColor(b)
@@ -298,17 +249,9 @@ function DayBody({
               <div
                 key={b.id}
                 className="absolute left-1 right-1 rounded-xl px-2 py-1 overflow-hidden"
-                style={{
-                  top,
-                  height,
-                  backgroundColor: color + '22',
-                  borderRight: `3px solid ${color}`,
-                }}
+                style={{ top, height, backgroundColor: color + '22', borderRight: `3px solid ${color}` }}
               >
-                <p
-                  className="text-[11px] font-bold leading-tight truncate"
-                  style={{ color }}
-                >
+                <p className="text-[11px] font-bold leading-tight truncate" style={{ color }}>
                   {b.profiles?.avatar_emoji} {b.title}
                 </p>
                 {height >= 48 && (
@@ -320,7 +263,6 @@ function DayBody({
             )
           })}
 
-          {/* Current-time line */}
           {showNowLine && (
             <div
               className="absolute left-0 right-0 flex items-center pointer-events-none"
@@ -333,71 +275,132 @@ function DayBody({
         </div>
       </div>
 
-      {/* All bookings list for this day (all statuses) */}
       {dayBookings.length > 0 && (
         <div className="px-4 pt-5 space-y-3" dir="rtl">
           <h3 className="font-bold text-textBase text-sm">כל הבקשות ליום זה</h3>
           {dayBookings.map(b => <BookingCard key={b.id} booking={b} />)}
         </div>
       )}
-
-      {dayBookings.length === 0 && approved.length === 0 && (
-        <div className="flex flex-col items-center py-10 text-textMuted" dir="rtl">
-          <span className="text-3xl mb-2">🚗</span>
-          <p className="text-sm font-semibold">הרכב פנוי ביום זה</p>
-        </div>
-      )}
     </div>
   )
 }
 
-/* ─────────────────── WEEK DETAIL PANEL ─────────────────── */
+/* ─────────────────── WEEK VIEW ─────────────────── */
 
-function DayDetailPanel({
-  selected,
-  selectedBookings,
-  onNavigate,
+function WeekBody({
+  weekDays,
+  approved,
+  bookings,
 }: {
-  selected: Date | null
-  selectedBookings: Booking[]
-  onNavigate: (page: ActivePage) => void
+  weekDays: Date[]
+  approved: Booking[]
+  bookings: Booking[]
 }) {
-  if (!selected) {
-    return (
-      <div className="flex flex-col items-center py-14 text-textMuted text-sm font-medium">
-        <span className="text-3xl mb-3">👆</span>
-        בחר יום לצפייה בבקשות
-      </div>
-    )
-  }
+  const now = new Date()
+  const nowH = now.getHours() + now.getMinutes() / 60
 
   return (
-    <div className="px-4 pt-4 pb-28 animate-fade-in" dir="rtl">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-textBase text-base">
-          {format(selected, 'EEEE, d בMMMM', { locale: he })}
-        </h2>
-        {isToday(selected) && (
-          <span className="bg-primary-100 text-primary-700 text-[11px] px-2.5 py-1 rounded-full font-bold">היום</span>
-        )}
+    <div dir="ltr" className="flex flex-col pb-28">
+
+      {/* Sticky day-header row */}
+      <div className="sticky top-0 z-10 bg-white border-b border-border flex shadow-sm">
+        <div className="w-10 flex-shrink-0" />
+        {weekDays.map((day, i) => {
+          const today = isToday(day)
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center py-1.5 border-r border-border/50 last:border-r-0">
+              <span className="text-[9px] font-semibold text-textMuted">{DAY_NAMES[i]}</span>
+              <span
+                className={`text-[13px] font-bold w-6 h-6 flex items-center justify-center rounded-full mt-0.5
+                  ${today ? 'bg-primary-500 text-white' : 'text-textBase'}`}
+              >
+                {format(day, 'd')}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
-      {selectedBookings.length === 0 ? (
-        <div className="flex flex-col items-center py-14">
-          <div className="w-20 h-20 bg-background rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-card">🚗</div>
-          <p className="text-textMuted font-semibold text-sm">הרכב פנוי ביום זה</p>
-          <button
-            onClick={() => onNavigate('new-booking')}
-            className="mt-4 text-primary-600 text-sm font-bold hover:text-primary-700 transition-colors flex items-center gap-1"
-          >
-            <span className="text-lg leading-none">+</span> הוסף בקשה
-          </button>
+      {/* Timeline grid */}
+      <div className="flex">
+        {/* Hour labels */}
+        <div className="w-10 flex-shrink-0 select-none">
+          {HOURS.map(h => (
+            <div
+              key={h}
+              className="flex items-start justify-end pr-1 text-[9px] font-semibold text-textMuted"
+              style={{ height: HOUR_H }}
+            >
+              <span className="-mt-2">{String(h).padStart(2, '0')}</span>
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {selectedBookings.map(b => <BookingCard key={b.id} booking={b} />)}
-        </div>
-      )}
+
+        {/* 7 day columns */}
+        {weekDays.map((day, i) => {
+          const dayApproved = approved.filter(b => overlapsDay(b, day))
+          const today = isToday(day)
+          const showNow = today && nowH >= DAY_START && nowH <= DAY_START + HOURS.length
+
+          return (
+            <div
+              key={i}
+              className={`flex-1 relative border-r border-border/40 last:border-r-0 ${today ? 'bg-primary-50/40' : ''}`}
+              style={{ height: HOURS.length * HOUR_H }}
+            >
+              {/* Hour lines */}
+              {HOURS.map((_, j) => (
+                <div key={j} className="absolute left-0 right-0 border-t border-border/40" style={{ top: j * HOUR_H }} />
+              ))}
+              {/* Half-hour lines */}
+              {HOURS.map((_, j) => (
+                <div key={`h${j}`} className="absolute left-0 right-0 border-t border-dashed border-border/20" style={{ top: j * HOUR_H + HOUR_H / 2 }} />
+              ))}
+
+              {/* Approved booking blocks */}
+              {dayApproved.map(b => {
+                const { top, height } = getTimeSlot(b, day)
+                const color = getUserColor(b)
+                return (
+                  <div
+                    key={b.id}
+                    className="absolute inset-x-0.5 rounded-md overflow-hidden"
+                    style={{ top, height, backgroundColor: color + '28', borderRight: `2px solid ${color}` }}
+                  >
+                    <p
+                      className="text-[9px] font-bold px-1 pt-0.5 truncate leading-tight"
+                      style={{ color }}
+                    >
+                      {b.profiles?.avatar_emoji}
+                      {height >= 44 ? ` ${b.profiles?.full_name?.split(' ')[0] ?? ''}` : ''}
+                    </p>
+                    {height >= 56 && (
+                      <p className="text-[8px] px-1 opacity-70 leading-tight" style={{ color }}>
+                        {format(new Date(b.start_time), 'HH:mm')}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Current-time line */}
+              {showNow && (
+                <div
+                  className="absolute left-0 right-0 border-t-2 border-primary-500 pointer-events-none z-10"
+                  style={{ top: (nowH - DAY_START) * HOUR_H }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary-500 -mt-1 -ml-1" />
+                </div>
+              )}
+
+              {/* Pending bookings dot indicator */}
+              {bookings.filter(b => b.status === 'pending' && isSameDay(new Date(b.start_time), day)).length > 0 && (
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-pending-DEFAULT" />
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -423,7 +426,6 @@ function MonthBody({
 }) {
   return (
     <div className="pb-28" dir="rtl">
-      {/* 6×7 grid */}
       <div className="grid grid-cols-7 gap-px bg-border mx-4 mt-2 rounded-2xl overflow-hidden border border-border">
         {monthDates.map((day, i) => {
           const inMonth = isSameMonth(day, anchor)
@@ -440,18 +442,14 @@ function MonthBody({
             >
               <span
                 className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0
-                  ${today
-                    ? 'bg-primary-500 text-white'
-                    : sel
-                    ? 'bg-primary-100 text-primary-700'
-                    : inMonth
-                    ? 'text-textBase'
+                  ${today ? 'bg-primary-500 text-white'
+                    : sel ? 'bg-primary-100 text-primary-700'
+                    : inMonth ? 'text-textBase'
                     : 'text-border'}`}
               >
                 {format(day, 'd')}
               </span>
 
-              {/* Colored event bars */}
               <div className="flex flex-col gap-px w-full px-0.5 flex-1">
                 {dayApproved.slice(0, 2).map(b => (
                   <div
@@ -471,7 +469,6 @@ function MonthBody({
         })}
       </div>
 
-      {/* Day detail panel */}
       {selected && (
         <div className="px-4 pt-5 animate-fade-in">
           <div className="flex items-center justify-between mb-4">
