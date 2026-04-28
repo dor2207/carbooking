@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Edit(~/.claude/skills/car-booking-review/**)",
+      "Bash(npm run *)",
+      "Bash(node generate-icons.js)",
+      "Bash(node generate-icons.cjs)",
+      "Bash(python -c \"import PIL; print\\('Pillow available'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"import PIL; print\\('ok'\\)\")",
+      "Bash(python -c \"import PIL; print\\('ok'\\)\")",
+      "PowerShell(python --version 2>&1)",
+      "PowerShell(python3 --version 2>&1)",
+      "PowerShell(Get-Command node, npm -ErrorAction SilentlyContinue)",
+      "PowerShell(node --version 2>&1)",
+      "PowerShell(npm --version 2>&1)",
+      "Bash(node -e \"require\\('canvas'\\)\")",
+      "Bash(node generate-logo.mjs)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\kobia\\.claude\\projects\\c--Users-kobia-OneDrive--------------car-booking\\memory",
+      "C:\\Users\\kobia\\.claude\\skills"
+    ]
+  }
+}

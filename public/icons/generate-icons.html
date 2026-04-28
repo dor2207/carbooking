@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!-- פתח קובץ זה בדפדפן, ולחץ "הורד אייקונים" כדי לייצר icon-192.png ו-icon-512.png -->
+<html lang="he" dir="rtl">
+<body style="font-family:sans-serif;padding:20px;background:#f0f4ff">
+<h2>🚗 יצירת אייקוני PWA</h2>
+<canvas id="c192" width="192" height="192" style="display:none"></canvas>
+<canvas id="c512" width="512" height="512" style="display:none"></canvas>
+<button onclick="generate()" style="background:#3B82F6;color:white;padding:12px 24px;border:none;border-radius:12px;font-size:16px;cursor:pointer">
+  הורד אייקונים
+</button>
+<div id="preview" style="margin-top:20px;display:flex;gap:20px;align-items:flex-end"></div>
+<script>
+function drawIcon(ctx, size) {
+  const r = size / 8;
+  ctx.fillStyle = '#3B82F6';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, [size * 0.18]);
+  ctx.fill();
+  ctx.font = `bold ${size * 0.55}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🚗', size / 2, size / 2 + size * 0.03);
+}
+function generate() {
+  const div = document.getElementById('preview');
+  div.innerHTML = '';
+  [192, 512].forEach(s => {
+    const c = document.getElementById('c' + s);
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, s, s);
+    drawIcon(ctx, s);
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = `icon-${s}.png`;
+    a.innerHTML = `<img src="${a.href}" width="${s > 200 ? 128 : s}" style="border-radius:${s*0.18/s*100}%;border:2px solid #ddd"><br><small>icon-${s}.png</small>`;
+    div.appendChild(a);
+    a.click();
+  });
+}
+</script>
+</body>
+</html>
