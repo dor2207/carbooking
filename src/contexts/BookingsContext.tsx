@@ -25,7 +25,7 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, profiles(id, full_name, role, avatar_emoji)')
+      .select('*, profiles(id, full_name, role, avatar_emoji, color)')
       .order('start_time', { ascending: true })
     if (!error && data) setBookings(data as Booking[])
     setLoading(false)

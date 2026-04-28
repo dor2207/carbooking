@@ -3,6 +3,7 @@ export interface Profile {
   full_name: string
   role: 'admin' | 'member'
   avatar_emoji: string
+  color: string
   created_at: string
 }
 

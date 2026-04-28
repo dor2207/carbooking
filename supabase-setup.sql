@@ -8,8 +8,12 @@ create table if not exists profiles (
   full_name text not null,
   role text not null default 'member' check (role in ('admin', 'member')),
   avatar_emoji text default '🙂',
+  color text not null default '#7C6FF7',
   created_at timestamptz default now()
 );
+
+-- אם הטבלה כבר קיימת, הוסף את עמודת הצבע:
+-- alter table profiles add column if not exists color text not null default '#7C6FF7';
 
 -- 2. יצירת טבלת bookings
 create table if not exists bookings (

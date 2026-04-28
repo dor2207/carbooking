@@ -4,17 +4,26 @@ import { supabase } from '../../lib/supabase'
 
 const EMOJI_OPTIONS = ['😊', '😎', '🤩', '😄', '🥳', '👦', '👧', '👨', '👩', '🧑', '👴', '👵', '🐱', '🦊', '🐼']
 
+const COLOR_PALETTE = [
+  '#7C6FF7', '#EF4444', '#F97316', '#EAB308',
+  '#22C55E', '#06B6D4', '#3B82F6', '#EC4899',
+  '#14B8A6', '#8B5CF6', '#F43F5E', '#84CC16',
+]
+
 export default function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth()
   const [name, setName] = useState(profile?.full_name ?? '')
   const [emoji, setEmoji] = useState(profile?.avatar_emoji ?? '😊')
+  const [color, setColor] = useState(profile?.color ?? '#7C6FF7')
   const [showPicker, setShowPicker] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const hasChanges =
-    name.trim() !== profile?.full_name || emoji !== profile?.avatar_emoji
+    name.trim() !== profile?.full_name ||
+    emoji !== profile?.avatar_emoji ||
+    color !== profile?.color
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('he-IL', {
@@ -29,7 +38,7 @@ export default function ProfilePage() {
     setError(null)
     const { error: dbError } = await supabase
       .from('profiles')
-      .update({ full_name: name.trim(), avatar_emoji: emoji })
+      .update({ full_name: name.trim(), avatar_emoji: emoji, color })
       .eq('id', profile.id)
     setSaving(false)
     if (dbError) {
@@ -55,15 +64,23 @@ export default function ProfilePage() {
             aria-label="שנה אימוגי"
           >
             {/* Glow ring */}
-            <div className="absolute inset-0 rounded-full bg-primary-200 blur-xl opacity-60 scale-110 group-hover:opacity-90 transition-opacity duration-300" />
+            <div
+              className="absolute inset-0 rounded-full blur-xl opacity-60 scale-110 group-hover:opacity-90 transition-opacity duration-300"
+              style={{ backgroundColor: color }}
+            />
 
             {/* Avatar circle */}
-            <div className="relative w-28 h-28 rounded-full bg-white shadow-xl flex items-center justify-center text-[4rem] leading-none border-4 border-white ring-4 ring-primary-200 group-hover:ring-primary-400 transition-all duration-200 group-active:scale-95">
+            <div
+              className="relative w-28 h-28 rounded-full bg-white shadow-xl flex items-center justify-center text-[4rem] leading-none border-4 border-white group-hover:scale-105 transition-all duration-200 group-active:scale-95"
+              style={{ boxShadow: `0 0 0 4px ${color}55` }}
+            >
               <span style={{ lineHeight: 1 }}>{emoji}</span>
             </div>
 
             {/* Edit badge */}
-            <div className="absolute -bottom-1 -left-1 w-9 h-9 bg-primary-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white group-hover:bg-primary-600 transition-colors duration-150">
+            <div className="absolute -bottom-1 -left-1 w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-colors duration-150"
+              style={{ backgroundColor: color }}
+            >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -88,6 +105,35 @@ export default function ProfilePage() {
             maxLength={40}
             dir="rtl"
           />
+        </div>
+
+        {/* ---- Color picker ---- */}
+        <div className="card p-5 mb-4 shadow-sm">
+          <label className="block text-[11px] font-bold text-textMuted mb-3 tracking-widest uppercase">
+            צבע שלי ביומן
+          </label>
+          <div className="grid grid-cols-6 gap-2">
+            {COLOR_PALETTE.map(c => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className="w-full aspect-square rounded-xl transition-all duration-150 active:scale-90 relative flex items-center justify-center"
+                style={{
+                  backgroundColor: c,
+                  transform: color === c ? 'scale(1.15)' : undefined,
+                  boxShadow: color === c ? `0 0 0 3px white, 0 0 0 5px ${c}` : undefined,
+                }}
+                aria-label={`צבע ${c}`}
+              >
+                {color === c && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-textMuted mt-2 text-center">הצבע יופיע בתצוגת היומן המשפחתי</p>
         </div>
 
         {/* ---- Info card ---- */}
@@ -162,15 +208,12 @@ export default function ProfilePage() {
           className="fixed inset-0 z-50 flex flex-col justify-end"
           onClick={() => setShowPicker(false)}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-          {/* Sheet */}
           <div
             className="relative bg-surface rounded-t-3xl pt-5 pb-12 px-6 animate-slide-up max-h-[70vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            {/* Handle */}
             <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5 shrink-0" />
 
             <p className="text-center text-sm font-bold text-textMuted mb-5 tracking-wide shrink-0">

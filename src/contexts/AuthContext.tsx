@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         full_name: fullName,
         role,
         avatar_emoji: avatarEmoji,
+        color: '#7C6FF7',
       })
       return { error: profileError }
     }
