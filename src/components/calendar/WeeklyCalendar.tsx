@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useBookings } from '../../contexts/BookingsContext'
-import BookingCard from '../bookings/BookingCard'
+import { useAuth } from '../../contexts/AuthContext'
 import LoadingSpinner from '../shared/LoadingSpinner'
 import {
   format, startOfWeek, addDays, addWeeks, subWeeks,
@@ -41,6 +41,152 @@ function getTimeSlot(b: Booking, day: Date): { top: number; height: number } {
   }
 }
 
+/* ─────────────────── BOOKING DETAIL SHEET ─────────────────── */
+
+const STATUS_LABEL: Record<string, string> = {
+  pending:   'ממתין לאישור',
+  approved:  'מאושר',
+  rejected:  'נדחה',
+  cancelled: 'בוטל',
+}
+const STATUS_PILL: Record<string, string> = {
+  pending:   'bg-pending-light text-pending-text border border-pending-border',
+  approved:  'bg-approved-light text-approved-text border border-approved-border',
+  rejected:  'bg-rejected-light text-rejected-text border border-rejected-border',
+  cancelled: 'bg-gray-100 text-gray-400 border border-gray-200',
+}
+
+function BookingDetailSheet({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  const { user, profile } = useAuth()
+  const { cancelBooking } = useBookings()
+  const [cancelling, setCancelling] = useState(false)
+
+  const canCancel =
+    booking.status === 'approved' &&
+    (user?.id === booking.user_id || profile?.role === 'admin')
+
+  async function handleCancel() {
+    if (!confirm('לבטל את ההזמנה המאושרת?')) return
+    setCancelling(true)
+    await cancelBooking(booking.id)
+    setCancelling(false)
+    onClose()
+  }
+
+  const start = new Date(booking.start_time)
+  const end   = new Date(booking.end_time)
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 animate-fade-in" />
+
+      {/* Sheet */}
+      <div
+        className="relative w-full bg-white rounded-t-3xl shadow-2xl animate-scale-in pb-safe"
+        style={{ animationDuration: '200ms' }}
+        onClick={e => e.stopPropagation()}
+        dir="rtl"
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-background text-textMuted hover:text-textBase transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="px-5 pt-2 pb-8">
+          {/* User row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+              style={{ backgroundColor: getUserColor(booking) + '20' }}
+            >
+              {booking.profiles?.avatar_emoji ?? '🙂'}
+            </div>
+            <div>
+              <p className="font-bold text-textBase text-base leading-snug">{booking.title}</p>
+              <p className="text-sm text-textMuted font-medium">{booking.profiles?.full_name}</p>
+            </div>
+            <span className={`status-pill mr-auto flex-shrink-0 ${STATUS_PILL[booking.status] ?? ''}`}>
+              {STATUS_LABEL[booking.status] ?? booking.status}
+            </span>
+          </div>
+
+          {/* Description */}
+          {booking.description && (
+            <p className="text-sm text-textMuted leading-relaxed mb-4 bg-background rounded-2xl px-4 py-3">
+              {booking.description}
+            </p>
+          )}
+
+          {/* Time block */}
+          <div className="bg-background rounded-2xl px-4 py-3 flex items-center gap-3 mb-3">
+            <span className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-bold text-textBase">
+                {format(start, 'EEEE, d בMMMM', { locale: he })}
+              </p>
+              <p className="text-xs text-textMuted font-medium mt-0.5">
+                {format(start, 'HH:mm')} – {format(end, 'HH:mm')}
+                {start.toDateString() !== end.toDateString() && (
+                  <span className="mr-1">({format(end, 'd/M')})</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Admin note */}
+          {booking.admin_note && (
+            <div className="bg-background rounded-2xl px-4 py-3 text-sm text-textMuted border border-border mb-3">
+              <span className="font-semibold text-textBase">הערת מנהל: </span>
+              {booking.admin_note}
+            </div>
+          )}
+
+          {/* Cancel button */}
+          {canCancel && (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="mt-2 w-full py-3.5 rounded-2xl text-sm font-bold border border-rejected-border
+                bg-rejected-light text-rejected-text hover:bg-rejected-DEFAULT hover:text-white
+                active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {cancelling ? (
+                <span className="w-4 h-4 border-2 border-current/40 border-t-current rounded-full animate-spin" />
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              )}
+              בטל הזמנה
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────── MAIN COMPONENT ─────────────────── */
+
 interface Props {
   onNavigate: (page: ActivePage) => void
 }
@@ -50,6 +196,7 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
   const [view, setView] = useState<CalView>('week')
   const [anchor, setAnchor] = useState(new Date())
   const [selected, setSelected] = useState<Date | null>(new Date())
+  const [sheetBooking, setSheetBooking] = useState<Booking | null>(null)
 
   const approved = bookings.filter(b => b.status === 'approved')
 
@@ -168,9 +315,15 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
             day={anchor}
             approved={approved.filter(b => overlapsDay(b, anchor))}
             allBookings={bookings}
+            onBookingClick={setSheetBooking}
           />
         ) : view === 'week' ? (
-          <WeekBody weekDays={weekDays} approved={approved} bookings={bookings} />
+          <WeekBody
+            weekDays={weekDays}
+            approved={approved}
+            bookings={bookings}
+            onBookingClick={setSheetBooking}
+          />
         ) : (
           <MonthBody
             monthDates={monthDates}
@@ -180,6 +333,7 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
             onSelect={selectDay}
             selectedBookings={selectedBookings}
             onNavigate={onNavigate}
+            onBookingClick={setSheetBooking}
           />
         )}
       </div>
@@ -194,6 +348,14 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>
+
+      {/* Booking detail sheet */}
+      {sheetBooking && (
+        <BookingDetailSheet
+          booking={sheetBooking}
+          onClose={() => setSheetBooking(null)}
+        />
+      )}
     </div>
   )
 }
@@ -204,10 +366,12 @@ function DayBody({
   day,
   approved,
   allBookings,
+  onBookingClick,
 }: {
   day: Date
   approved: Booking[]
   allBookings: Booking[]
+  onBookingClick: (b: Booking) => void
 }) {
   const dayBookings = allBookings
     .filter(b => isSameDay(new Date(b.start_time), day))
@@ -246,9 +410,10 @@ function DayBody({
             const { top, height } = getTimeSlot(b, day)
             const color = getUserColor(b)
             return (
-              <div
+              <button
                 key={b.id}
-                className="absolute left-1 right-1 rounded-xl px-2 py-1 overflow-hidden"
+                onClick={() => onBookingClick(b)}
+                className="absolute left-1 right-1 rounded-xl px-2 py-1 overflow-hidden text-right active:brightness-95 transition-all"
                 style={{ top, height, backgroundColor: color + '22', borderRight: `3px solid ${color}` }}
               >
                 <p className="text-[11px] font-bold leading-tight truncate" style={{ color }}>
@@ -259,7 +424,7 @@ function DayBody({
                     {format(new Date(b.start_time), 'HH:mm')}–{format(new Date(b.end_time), 'HH:mm')}
                   </p>
                 )}
-              </div>
+              </button>
             )
           })}
 
@@ -278,7 +443,13 @@ function DayBody({
       {dayBookings.length > 0 && (
         <div className="px-4 pt-5 space-y-3" dir="rtl">
           <h3 className="font-bold text-textBase text-sm">כל הבקשות ליום זה</h3>
-          {dayBookings.map(b => <BookingCard key={b.id} booking={b} />)}
+          {dayBookings.map(b => (
+            <button key={b.id} className="w-full text-right" onClick={() => onBookingClick(b)}>
+              <div className="pointer-events-none">
+                <BookingCardSimple booking={b} />
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -291,10 +462,12 @@ function WeekBody({
   weekDays,
   approved,
   bookings,
+  onBookingClick,
 }: {
   weekDays: Date[]
   approved: Booking[]
   bookings: Booking[]
+  onBookingClick: (b: Booking) => void
 }) {
   const now = new Date()
   const nowH = now.getHours() + now.getMinutes() / 60
@@ -362,9 +535,10 @@ function WeekBody({
                 const { top, height } = getTimeSlot(b, day)
                 const color = getUserColor(b)
                 return (
-                  <div
+                  <button
                     key={b.id}
-                    className="absolute inset-x-0.5 rounded-md overflow-hidden"
+                    onClick={() => onBookingClick(b)}
+                    className="absolute inset-x-0.5 rounded-md overflow-hidden active:brightness-95 transition-all"
                     style={{ top, height, backgroundColor: color + '28', borderRight: `2px solid ${color}` }}
                   >
                     <p
@@ -379,7 +553,7 @@ function WeekBody({
                         {format(new Date(b.start_time), 'HH:mm')}
                       </p>
                     )}
-                  </div>
+                  </button>
                 )
               })}
 
@@ -415,6 +589,7 @@ function MonthBody({
   onSelect,
   selectedBookings,
   onNavigate,
+  onBookingClick,
 }: {
   monthDates: Date[]
   anchor: Date
@@ -423,6 +598,7 @@ function MonthBody({
   onSelect: (day: Date) => void
   selectedBookings: Booking[]
   onNavigate: (page: ActivePage) => void
+  onBookingClick: (b: Booking) => void
 }) {
   return (
     <div className="pb-28" dir="rtl">
@@ -493,11 +669,70 @@ function MonthBody({
             </div>
           ) : (
             <div className="space-y-3">
-              {selectedBookings.map(b => <BookingCard key={b.id} booking={b} />)}
+              {selectedBookings.map(b => (
+                <button key={b.id} className="w-full text-right" onClick={() => onBookingClick(b)}>
+                  <div className="pointer-events-none">
+                    <BookingCardSimple booking={b} />
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/* ─────────────────── INLINE BOOKING CARD (calendar-only) ─────────────────── */
+
+const STATUS_BAR: Record<string, string> = {
+  pending:   'bg-pending-DEFAULT',
+  approved:  'bg-approved-DEFAULT',
+  rejected:  'bg-rejected-DEFAULT',
+  cancelled: 'bg-gray-300',
+}
+
+function BookingCardSimple({ booking }: { booking: Booking }) {
+  const start = new Date(booking.start_time)
+  const end   = new Date(booking.end_time)
+  const color = getUserColor(booking)
+
+  return (
+    <div className="bg-white rounded-3xl shadow-card overflow-hidden">
+      <div className="flex">
+        <div className={`w-1 flex-shrink-0 ${STATUS_BAR[booking.status] ?? 'bg-gray-300'}`} />
+        <div className="flex-1 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span
+                  className="w-5 h-5 rounded-md flex items-center justify-center text-sm flex-shrink-0"
+                  style={{ backgroundColor: color + '20' }}
+                >
+                  {booking.profiles?.avatar_emoji ?? '🙂'}
+                </span>
+                <span className="text-xs text-textMuted font-medium truncate">{booking.profiles?.full_name ?? 'משתמש'}</span>
+              </div>
+              <h3 className="font-bold text-textBase text-sm leading-snug">{booking.title}</h3>
+              <div className="flex items-center gap-1.5 mt-2">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7C6FF7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+                </svg>
+                <span className="text-xs font-semibold text-textBase">
+                  {format(start, 'HH:mm')} – {format(end, 'HH:mm')}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <span className={`status-pill ${STATUS_PILL[booking.status] ?? ''}`}>
+                {STATUS_LABEL[booking.status] ?? booking.status}
+              </span>
+              <span className="text-[10px] text-textMuted/60">לחץ לפרטים</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
