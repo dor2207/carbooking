@@ -78,35 +78,29 @@ function BookingDetailSheet({ booking, onClose }: { booking: Booking; onClose: (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-50 flex items-center justify-center px-5"
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 animate-fade-in" />
+      <div className="absolute inset-0 bg-black/50 animate-fade-in" />
 
-      {/* Sheet */}
+      {/* Modal card */}
       <div
-        className="relative w-full bg-white rounded-t-3xl shadow-2xl animate-scale-in pb-safe"
-        style={{ animationDuration: '200ms' }}
+        className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl animate-scale-in overflow-hidden"
         onClick={e => e.stopPropagation()}
         dir="rtl"
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-background text-textMuted hover:text-textBase transition-colors"
+          className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-background text-textMuted hover:text-textBase transition-colors z-10"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
 
-        <div className="px-5 pt-2 pb-8">
+        <div className="px-5 pt-5 pb-6">
           {/* User row */}
           <div className="flex items-center gap-3 mb-4">
             <div
