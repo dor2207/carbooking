@@ -9,9 +9,11 @@ import AdminPage from './components/admin/AdminPage'
 import ProfilePage from './components/profile/ProfilePage'
 import BottomNav from './components/shared/BottomNav'
 import LoadingSpinner from './components/shared/LoadingSpinner'
+import { useNotifications } from './contexts/NotificationsContext'
 
 export default function App() {
   const { user, profile, loading, signOut } = useAuth()
+  const { showPrompt, subscribe, dismiss } = useNotifications()
   const [activePage, setActivePage] = useState<ActivePage>('calendar')
 
   if (loading) {
@@ -69,6 +71,27 @@ export default function App() {
         {activePage === 'profile'      && <ProfilePage />}
       </div>
 
+      {showPrompt && (
+        <div className="mx-3 mb-2 glass rounded-2xl p-3 flex items-center gap-3 shadow-sm border border-primary-100 animate-fade-in">
+          <span className="text-2xl shrink-0">🔔</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-textBase">הפעל/י התראות</p>
+            <p className="text-xs text-textMuted leading-tight">קבל/י עדכון כשבקשה מאושרת או נדחית</p>
+          </div>
+          <button
+            onClick={subscribe}
+            className="shrink-0 text-xs bg-primary-500 text-white font-semibold px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
+          >
+            אפשר
+          </button>
+          <button
+            onClick={dismiss}
+            className="shrink-0 text-xs text-textMuted px-1 py-1.5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <BottomNav activePage={activePage} onNavigate={navigate} />
     </div>
   )

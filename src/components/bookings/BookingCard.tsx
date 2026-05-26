@@ -6,6 +6,7 @@ interface Props {
   booking: Booking
   showActions?: boolean
   onDelete?: (id: string) => void
+  onCancel?: (id: string) => void
 }
 
 const STATUS_CONFIG = {
@@ -27,9 +28,15 @@ const STATUS_CONFIG = {
     dotClass:   'bg-rejected-DEFAULT',
     barClass:   'bg-rejected-DEFAULT',
   },
+  cancelled: {
+    label:      'בוטל',
+    pillClass:  'bg-gray-100 text-gray-400 border border-gray-200',
+    dotClass:   'bg-gray-400',
+    barClass:   'bg-gray-300',
+  },
 }
 
-export default function BookingCard({ booking, onDelete }: Props) {
+export default function BookingCard({ booking, onDelete, onCancel }: Props) {
   const cfg = STATUS_CONFIG[booking.status]
   const start = new Date(booking.start_time)
   const end = new Date(booking.end_time)
@@ -94,6 +101,14 @@ export default function BookingCard({ booking, onDelete }: Props) {
                   className="text-[11px] text-textMuted hover:text-rejected-DEFAULT transition-colors font-medium"
                 >
                   מחק
+                </button>
+              )}
+              {onCancel && booking.status === 'approved' && (
+                <button
+                  onClick={() => onCancel(booking.id)}
+                  className="text-[11px] text-textMuted hover:text-rejected-DEFAULT transition-colors font-medium"
+                >
+                  בטל
                 </button>
               )}
             </div>

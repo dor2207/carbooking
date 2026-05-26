@@ -11,26 +11,34 @@ interface Props {
 }
 
 const SECTION_CONFIG = {
-  pending:  { label: 'ממתינות לאישור', dotClass: 'bg-pending-DEFAULT',  textClass: 'text-pending-text'  },
-  approved: { label: 'מאושרות',         dotClass: 'bg-approved-DEFAULT', textClass: 'text-approved-text' },
-  rejected: { label: 'נדחו',            dotClass: 'bg-rejected-DEFAULT', textClass: 'text-rejected-text' },
+  pending:   { label: 'ממתינות לאישור', dotClass: 'bg-pending-DEFAULT',  textClass: 'text-pending-text'  },
+  approved:  { label: 'מאושרות',         dotClass: 'bg-approved-DEFAULT', textClass: 'text-approved-text' },
+  rejected:  { label: 'נדחו',            dotClass: 'bg-rejected-DEFAULT', textClass: 'text-rejected-text' },
+  cancelled: { label: 'בוטלו',           dotClass: 'bg-gray-400',         textClass: 'text-gray-400'      },
 }
 
 export default function MyBookingsPage({ onNavigate }: Props) {
   const { user, profile } = useAuth()
-  const { bookings, loading, deleteBooking } = useBookings()
+  const { bookings, loading, deleteBooking, cancelBooking } = useBookings()
 
   const myBookings = bookings
     .filter(b => b.user_id === user?.id)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-  const pending  = myBookings.filter(b => b.status === 'pending')
-  const approved = myBookings.filter(b => b.status === 'approved')
-  const rejected = myBookings.filter(b => b.status === 'rejected')
+  const pending   = myBookings.filter(b => b.status === 'pending')
+  const approved  = myBookings.filter(b => b.status === 'approved')
+  const rejected  = myBookings.filter(b => b.status === 'rejected')
+  const cancelled = myBookings.filter(b => b.status === 'cancelled')
 
   async function handleDelete(id: string) {
     if (confirm('למחוק את הבקשה?')) {
       await deleteBooking(id)
+    }
+  }
+
+  async function handleCancel(id: string) {
+    if (confirm('לבטל את ההזמנה המאושרת?')) {
+      await cancelBooking(id)
     }
   }
 
@@ -77,6 +85,12 @@ export default function MyBookingsPage({ onNavigate }: Props) {
                 <p className="text-[10px] text-rejected-text font-semibold mt-0.5">נדחו</p>
               </div>
             )}
+            {cancelled.length > 0 && (
+              <div className="flex-1 bg-gray-100 rounded-2xl px-3 py-2 text-center">
+                <p className="text-xl font-extrabold text-gray-400 leading-none">{cancelled.length}</p>
+                <p className="text-[10px] text-gray-400 font-semibold mt-0.5">בוטלו</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -97,9 +111,10 @@ export default function MyBookingsPage({ onNavigate }: Props) {
         ) : (
           <div className="space-y-6">
             {([
-              { list: pending,  key: 'pending'  as const },
-              { list: approved, key: 'approved' as const },
-              { list: rejected, key: 'rejected' as const },
+              { list: pending,   key: 'pending'   as const },
+              { list: approved,  key: 'approved'  as const },
+              { list: rejected,  key: 'rejected'  as const },
+              { list: cancelled, key: 'cancelled' as const },
             ]).map(({ list, key }) => list.length > 0 && (
               <section key={key}>
                 <div className="flex items-center gap-2 mb-3">
@@ -114,7 +129,11 @@ export default function MyBookingsPage({ onNavigate }: Props) {
                       <p className="text-[11px] text-textMuted font-medium mb-1.5 mr-1">
                         {format(new Date(b.start_time), 'EEEE, d בMMMM', { locale: he })}
                       </p>
-                      <BookingCard booking={b} onDelete={key === 'pending' ? handleDelete : undefined} />
+                      <BookingCard
+                        booking={b}
+                        onDelete={key === 'pending' ? handleDelete : undefined}
+                        onCancel={key === 'approved' ? handleCancel : undefined}
+                      />
                     </div>
                   ))}
                 </div>

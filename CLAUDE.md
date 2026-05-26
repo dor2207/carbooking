@@ -20,21 +20,22 @@
 src/
   main.tsx                          — app entry, wraps providers
   App.tsx                           — root routing via activePage state
-  types.ts                          — shared TS types (Profile, Booking, ActivePage)
+  types/
+    index.ts                        — shared TS types (Profile, Booking, ActivePage)
   lib/
     supabase.ts                     — supabase client singleton
   contexts/
-    AuthContext.tsx                 — auth state + profile, signIn/signUp/signOut
-    BookingsContext.tsx             — bookings state + Supabase Realtime subscription
+    AuthContext.tsx                 — auth state + profile, signIn/signUp/signOut/refreshProfile
+    BookingsContext.tsx             — bookings state + Supabase Realtime subscription (joins profiles for color)
   components/
     auth/AuthPage.tsx               — login / register with emoji avatar picker
-    calendar/WeeklyCalendar.tsx     — weekly calendar view, shows approved bookings
+    calendar/WeeklyCalendar.tsx     — 3-view calendar: יומי / שבועי / חודשי (pixel-based timeline, user colors)
     bookings/
       NewBookingPage.tsx            — booking form with overlap-check validation
       MyBookingsPage.tsx            — user's personal booking history
       BookingCard.tsx               — single booking display card
     admin/AdminPage.tsx             — admin approve/reject panel (role=admin only)
-    profile/ProfilePage.tsx         — profile settings page
+    profile/ProfilePage.tsx         — profile settings + color picker (12-color palette)
     shared/
       BottomNav.tsx                 — bottom navigation bar
       DatePicker.tsx                — custom date picker component
@@ -52,6 +53,7 @@ supabase-setup.sql                  — full DB schema + RLS policies (run once 
 | full_name | text | |
 | role | text | `'admin'` or `'member'` |
 | avatar_emoji | text | default `'🙂'` |
+| color | text | default `'#7C6FF7'` — user's calendar color |
 | created_at | timestamptz | |
 
 ### `bookings`
@@ -66,6 +68,25 @@ supabase-setup.sql                  — full DB schema + RLS policies (run once 
 | status | text | `'pending'` / `'approved'` / `'rejected'` |
 | admin_note | text | nullable |
 | created_at / updated_at | timestamptz | |
+
+## Calendar Architecture (`WeeklyCalendar.tsx`)
+
+Three views toggled by `CalView` state (`'day' | 'week' | 'month'`):
+
+| View | Description |
+|---|---|
+| **יומי** | Single-day vertical timeline 06:00–23:00, bookings as absolute-positioned blocks |
+| **שבועי** | 7-column grid (Google Calendar style), sticky day headers, current-time red line |
+| **חודשי** | 6×7 grid, colored event bars per day, click a day to see detail panel |
+
+**Constants:** `HOUR_H = 56` px/hour, `DAY_START = 6` (06:00), `HOURS = [6..23]`
+
+**User color:** read from `b.profiles?.color` via `getUserColor(b)`. Each booking block uses the owner's color. `BookingsContext` selects `profiles(color, avatar_emoji, full_name)` via join.
+
+**Existing DB migration** (for DBs created before color was added):
+```sql
+alter table profiles add column if not exists color text not null default '#7C6FF7';
+```
 
 ## Key Behaviors & Invariants
 

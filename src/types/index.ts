@@ -14,7 +14,7 @@ export interface Booking {
   description?: string
   start_time: string
   end_time: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
   admin_note?: string
   created_at: string
   updated_at: string

@@ -10,6 +10,7 @@ interface BookingsContextType {
   createBooking: (data: Omit<Booking, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'profiles'>) => Promise<{ error: Error | null }>
   approveBooking: (id: string, note?: string) => Promise<{ error: Error | null }>
   rejectBooking: (id: string, note?: string) => Promise<{ error: Error | null }>
+  cancelBooking: (id: string) => Promise<{ error: Error | null }>
   deleteBooking: (id: string) => Promise<{ error: Error | null }>
   refetch: () => Promise<void>
 }
@@ -53,11 +54,16 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
 
   async function createBooking(data: Omit<Booking, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'profiles'>) {
     if (!user) return { error: new Error('לא מחובר') }
-    const { error } = await supabase.from('bookings').insert({
-      ...data,
-      user_id: user.id,
-      status: 'pending',
-    })
+    const { data: inserted, error } = await supabase
+      .from('bookings')
+      .insert({ ...data, user_id: user.id, status: 'pending' })
+      .select('id')
+      .single()
+    if (!error && inserted) {
+      supabase.functions
+        .invoke('send-push-notification', { body: { event: 'new_booking', booking_id: inserted.id } })
+        .catch(() => {})
+    }
     return { error }
   }
 
@@ -77,6 +83,11 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
       .from('bookings')
       .update({ status: 'approved', admin_note: note ?? null, updated_at: new Date().toISOString() })
       .eq('id', id)
+    if (!error) {
+      supabase.functions
+        .invoke('send-push-notification', { body: { event: 'approved', booking_id: id } })
+        .catch(() => {})
+    }
     return { error }
   }
 
@@ -84,6 +95,19 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from('bookings')
       .update({ status: 'rejected', admin_note: note ?? null, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (!error) {
+      supabase.functions
+        .invoke('send-push-notification', { body: { event: 'rejected', booking_id: id } })
+        .catch(() => {})
+    }
+    return { error }
+  }
+
+  async function cancelBooking(id: string) {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', id)
     return { error }
   }
@@ -94,7 +118,7 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <BookingsContext.Provider value={{ bookings, loading, pendingCount, createBooking, approveBooking, rejectBooking, deleteBooking, refetch: fetchBookings }}>
+    <BookingsContext.Provider value={{ bookings, loading, pendingCount, createBooking, approveBooking, rejectBooking, cancelBooking, deleteBooking, refetch: fetchBookings }}>
       {children}
     </BookingsContext.Provider>
   )

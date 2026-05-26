@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { BookingsProvider } from './contexts/BookingsContext'
+import { NotificationsProvider } from './contexts/NotificationsContext'
 import './index.css'
 
 // Lock to portrait when the browser API is available (works for installed PWA)
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
       <BookingsProvider>
-        <App />
+        <NotificationsProvider>
+          <App />
+        </NotificationsProvider>
       </BookingsProvider>
     </AuthProvider>
   </React.StrictMode>

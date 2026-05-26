@@ -6,7 +6,7 @@ import { format } from 'date-fns'
 import { he } from 'date-fns/locale'
 
 export default function AdminPage() {
-  const { bookings, loading, approveBooking, rejectBooking } = useBookings()
+  const { bookings, loading, approveBooking, rejectBooking, cancelBooking } = useBookings()
   const [noteMap,       setNoteMap]       = useState<Record<string, string>>({})
   const [openNoteId,    setOpenNoteId]    = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -35,6 +35,14 @@ export default function AdminPage() {
     setOpenNoteId(null)
   }
 
+  async function handleCancel(booking: Booking) {
+    if (!confirm(`לבטל את ההזמנה "${booking.title}"?`)) return
+    setActionLoading(booking.id + '-cancel')
+    const { error } = await cancelBooking(booking.id)
+    setActionLoading(null)
+    if (error) setActionError(error.message)
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
@@ -46,7 +54,7 @@ export default function AdminPage() {
   const recentlyHandled = bookings
     .filter(b => b.status !== 'pending')
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-    .slice(0, 5)
+    .slice(0, 10)
 
   return (
     <div className="flex-1 overflow-y-auto scroll-container bg-background pb-28">
@@ -228,22 +236,42 @@ export default function AdminPage() {
           <div className="mt-6">
             <h2 className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3 px-1">טופלו לאחרונה</h2>
             <div className="space-y-2">
-              {recentlyHandled.map(b => (
-                <div key={b.id} className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-card">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-lg leading-none">{b.profiles?.avatar_emoji ?? '🙂'}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-textBase">{b.title}</p>
-                      <p className="text-xs text-textMuted">{b.profiles?.full_name}</p>
+              {recentlyHandled.map(b => {
+                const isCancelling = actionLoading === b.id + '-cancel'
+                return (
+                  <div key={b.id} className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between gap-2 shadow-card">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-lg leading-none flex-shrink-0">{b.profiles?.avatar_emoji ?? '🙂'}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-textBase truncate">{b.title}</p>
+                        <p className="text-xs text-textMuted">{b.profiles?.full_name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`status-pill ${
+                        b.status === 'approved'
+                          ? 'bg-approved-light text-approved-text border border-approved-border'
+                          : b.status === 'cancelled'
+                          ? 'bg-gray-100 text-gray-400 border border-gray-200'
+                          : 'bg-rejected-light text-rejected-text border border-rejected-border'
+                      }`}>
+                        {b.status === 'approved' ? 'אושר' : b.status === 'cancelled' ? 'בוטל' : 'נדחה'}
+                      </span>
+                      {b.status === 'approved' && (
+                        <button
+                          onClick={() => handleCancel(b)}
+                          disabled={!!actionLoading}
+                          className="text-[11px] text-textMuted hover:text-rejected-DEFAULT transition-colors font-medium disabled:opacity-40"
+                        >
+                          {isCancelling
+                            ? <span className="w-3 h-3 border border-current/40 border-t-current rounded-full animate-spin inline-block" />
+                            : 'בטל'}
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <span className={`status-pill ${b.status === 'approved'
-                    ? 'bg-approved-light text-approved-text border border-approved-border'
-                    : 'bg-rejected-light text-rejected-text border border-rejected-border'}`}>
-                    {b.status === 'approved' ? 'אושר' : 'נדחה'}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
