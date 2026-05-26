@@ -17,7 +17,8 @@
       "PowerShell(node --version 2>&1)",
       "PowerShell(npm --version 2>&1)",
       "Bash(node -e \"require\\('canvas'\\)\")",
-      "Bash(node generate-logo.mjs)"
+      "Bash(node generate-logo.mjs)",
+      "Bash(start \"c:\\\\Users\\\\kobia\\\\OneDrive\\\\שולחן העבודה\\\\car-booking\\\\demo.html\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\kobia\\.claude\\projects\\c--Users-kobia-OneDrive--------------car-booking\\memory",

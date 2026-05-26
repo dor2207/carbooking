@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>משפחה על גלגלים — הדגמה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F5F3EE;--surface:#fff;--border:#E8E3D8;
+  --text:#1A1714;--muted:#7A7068;
+  --primary:#7C6FF7;--primary-light:#E6E4FD;
+  --approved:#059669;--approved-light:#D1FAE5;
+  --pending:#F59E0B;--pending-light:#FEF3C7;
+  --rejected:#F43F5E;--rejected-light:#FFE4E8;
+  --ps:1; /* phone scale */
+}
+html,body{height:100%;overflow:hidden;font-family:'Heebo',sans-serif;direction:rtl;touch-action:manipulation}
+
+/* ── BACKGROUND ── */
+.demo-bg{position:fixed;inset:0;transition:background 0.8s ease;z-index:0}
+.demo-bg.dark{background:#1A1714}
+.demo-bg.light{background:var(--bg)}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.b1{width:500px;height:500px;background:var(--primary);opacity:.06;top:-150px;right:-150px;animation:bf 9s ease-in-out infinite}
+.b2{width:350px;height:350px;background:#A78BFA;opacity:.05;bottom:-80px;left:-80px;animation:bf 11s ease-in-out infinite reverse}
+.b3{width:250px;height:250px;background:var(--primary);opacity:.04;top:40%;left:20%;animation:bf 7s ease-in-out infinite 2s}
+@keyframes bf{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(30px,-25px) scale(1.06)}70%{transform:translate(-20px,15px) scale(.96)}}
+
+/* ── PROGRESS BAR ── */
+.prog-track{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.12);z-index:200}
+.prog-fill{height:100%;width:0%;background:var(--primary);box-shadow:0 0 10px rgba(124,111,247,.7);transition:width linear}
+
+/* ── TOP BAR ── */
+.top-bar{position:fixed;top:10px;left:12px;z-index:200;display:flex;align-items:center;gap:8px}
+.pause-btn{
+  background:rgba(255,255,255,.15);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.25);color:#fff;
+  border-radius:99px;padding:6px 14px;font-family:'Heebo',sans-serif;
+  font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:5px;transition:all .2s;user-select:none
+}
+.pause-btn.light-mode{color:var(--text);background:rgba(26,23,20,.07);border-color:rgba(26,23,20,.12)}
+.pause-btn:hover{transform:scale(1.04)}
+
+/* ── SCENE DOTS ── */
+.dots{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:200}
+.dot{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.3);transition:all .35s ease;cursor:pointer}
+.dot.active{width:22px;background:var(--primary)}
+.dot.light{background:rgba(26,23,20,.18)}
+.dot.light.active{background:var(--primary)}
+
+/* ── STAGE ── */
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10}
+
+/* ── SCENE ── */
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .55s cubic-bezier(.4,0,.2,1)}
+.scene.active{opacity:1;pointer-events:all}
+
+/* ────────────────────────────────────
+   SCENE 1  INTRO
+──────────────────────────────────── */
+.intro{text-align:center;color:#fff;padding:24px}
+.intro-car{font-size:clamp(64px,15vw,96px);display:block;animation:bounceIn .8s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes bounceIn{from{transform:scale(.2) rotate(-15deg);opacity:0}to{transform:scale(1) rotate(0deg);opacity:1}}
+.intro-title{
+  font-size:clamp(26px,6vw,52px);font-weight:900;
+  margin:14px 0 8px;
+  background:linear-gradient(135deg,#7C6FF7 0%,#C4B5FD 50%,#7C6FF7 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimTxt 3s linear infinite,fsu .6s .25s both
+}
+@keyframes shimTxt{from{background-position:0}to{background-position:200%}}
+.intro-tag{font-size:clamp(13px,3vw,18px);color:rgba(255,255,255,.55);font-weight:300;animation:fsu .6s .6s both}
+.intro-badge{
+  margin-top:28px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(124,111,247,.18);border:1px solid rgba(124,111,247,.35);
+  border-radius:99px;padding:8px 20px;color:#C4B5FD;font-size:13px;font-weight:500;
+  animation:fsu .6s 1s both
+}
+@keyframes fsu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ────────────────────────────────────
+   PHONE FRAME
+──────────────────────────────────── */
+.phone-scene{
+  display:flex;flex-direction:column;align-items:center;
+  gap:0; /* gap handled by caption margin */
+}
+/* Wrapper that collapses to the scaled size */
+.phone-wrap{
+  width:calc(290px * var(--ps));
+  height:calc(600px * var(--ps));
+  position:relative;display:flex;align-items:flex-start;justify-content:center
+}
+.phone-frame{
+  width:290px;height:600px;
+  background:linear-gradient(150deg,#2D2937,#1A1714);
+  border-radius:42px;padding:3px;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,.4),
+    0 0 0 1px rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.12);
+  position:absolute;top:0;left:50%;
+  transform:translateX(-50%) scale(var(--ps));
+  transform-origin:top center;
+}
+.phone-frame::before{
+  content:'';position:absolute;inset:0;border-radius:42px;
+  background:linear-gradient(140deg,rgba(255,255,255,.13) 0%,transparent 45%);
+  pointer-events:none
+}
+.phone-screen{
+  width:100%;height:100%;background:var(--bg);border-radius:40px;overflow:hidden;position:relative
+}
+.notch{
+  width:90px;height:25px;background:#1A1714;border-radius:0 0 16px 16px;
+  margin:0 auto;display:flex;align-items:center;justify-content:center;gap:5px;z-index:5;position:relative
+}
+.n-cam{width:8px;height:8px;border-radius:50%;background:#2a2a2a}
+.n-spk{width:36px;height:4px;border-radius:2px;background:#2a2a2a}
+
+.p-body{
+  position:absolute;top:25px;left:0;right:0;
+  bottom:54px;overflow:hidden;padding:10px 14px 0
+}
+/* bottom nav */
+.b-nav{
+  position:absolute;bottom:0;left:0;right:0;height:54px;
+  background:rgba(245,243,238,.92);backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;padding:0 4px
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:9px;color:var(--muted);font-weight:600}
+.nav-item.on{color:var(--primary)}
+.nav-i{font-size:17px;line-height:1}
+.nav-plus{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--primary),#9B8FF9);border-radius:11px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;
+  box-shadow:0 4px 12px rgba(124,111,247,.4)
+}
+
+/* ── caption ── */
+.caption{
+  background:rgba(255,255,255,.92);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.8);border-radius:14px;
+  padding:9px 18px;font-size:12px;color:var(--text);font-weight:600;
+  text-align:center;max-width:280px;
+  box-shadow:0 4px 24px rgba(0,0,0,.07);
+  margin-top:10px;
+  animation:capPop .4s .4s cubic-bezier(.34,1.56,.64,1) both
+}
+.caption-dark{
+  background:rgba(26,23,20,.7);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.1);color:#fff
+}
+@keyframes capPop{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* ────────────────────────────────────
+   SCREEN CONTENTS
+──────────────────────────────────── */
+
+/* shared heading */
+.p-head{font-size:18px;font-weight:800;color:var(--text);margin-bottom:12px}
+.p-sub{font-size:11px;color:var(--muted);font-weight:500;margin-top:-10px;margin-bottom:12px}
+
+/* input field */
+.f-wrap{margin-bottom:9px}
+.f-label{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;display:block}
+.f-input{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:11px;padding:8px 10px;font-size:12px;
+  font-family:'Heebo',sans-serif;color:var(--text);direction:rtl;outline:none
+}
+.f-input.focused{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(124,111,247,.1)}
+
+/* typing cursor */
+.tc::after{content:'|';animation:blink .65s step-end infinite;color:var(--primary)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* primary button */
+.btn-p{
+  width:100%;background:linear-gradient(135deg,var(--primary),#9B8FF9);color:#fff;
+  border:none;border-radius:13px;padding:11px;
+  font-family:'Heebo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 18px rgba(124,111,247,.35);transition:all .15s;margin-top:4px
+}
+.btn-p:active,.btn-p.pressed{transform:scale(.97);box-shadow:0 2px 8px rgba(124,111,247,.2)}
+
+/* ── SCENE 2  REGISTRATION ── */
+.avatar-row{display:flex;gap:7px;margin-bottom:12px;justify-content:center}
+.av{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:#fff;transition:all .25s
+}
+.av.sel{border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,111,247,.2);background:var(--primary-light)}
+
+/* ── SCENE 3  CALENDAR ── */
+.cal-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-dh{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:3px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;height:340px}
+.cal-col{
+  background:rgba(255,255,255,.55);border-radius:7px;
+  border:1px solid var(--border);position:relative
+}
+.cal-blk{
+  position:absolute;left:2px;right:2px;border-radius:5px;padding:3px 4px;
+  font-size:8px;font-weight:700;line-height:1.2;
+  opacity:0;transform:scaleY(0);transform-origin:top;
+  transition:all .45s cubic-bezier(.34,1.56,.64,1)
+}
+.cal-blk.show{opacity:1;transform:scaleY(1)}
+.cal-blk.g{background:var(--approved-light);color:var(--approved)}
+.cal-blk.v{background:var(--primary-light);color:var(--primary)}
+.cal-blk.o{background:var(--pending-light);color:#92400E}
+
+/* ── SCENE 4  BOOKING FORM ── */
+.date-field{
+  background:#fff;border:1.5px solid var(--primary);border-radius:11px;
+  padding:8px 10px;font-size:11px;color:var(--text);
+  display:flex;align-items:center;gap:5px;margin-bottom:9px
+}
+.time-row{display:flex;gap:7px;margin-bottom:9px}
+.time-f{
+  flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;
+  padding:8px;font-size:13px;font-weight:700;color:var(--text);text-align:center
+}
+
+/* ── SCENE 5  PENDING ── */
+.bk-card{
+  background:#fff;border-radius:16px;padding:13px;
+  box-shadow:0 1px 3px rgba(26,23,20,.06),0 4px 16px rgba(26,23,20,.04);
+  opacity:0;transform:scale(.85) translateY(20px);transition:all .5s cubic-bezier(.34,1.56,.64,1)
+}
+.bk-card.show{opacity:1;transform:scale(1) translateY(0)}
+.bk-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
+.bk-meta{font-size:11px;color:var(--muted);margin-bottom:9px}
+.s-pill{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:4px 9px;border-radius:99px;font-size:10px;font-weight:700;transition:all .4s ease
+}
+.s-pill.pending{background:var(--pending-light);color:#92400E}
+.s-pill.approved{background:var(--approved-light);color:#065F46}
+
+/* ── SCENE 6  ADMIN ── */
+.adm-head{display:flex;align-items:center;gap:7px;margin-bottom:12px}
+.adm-t{font-size:18px;font-weight:800;color:var(--text)}
+.adm-card{
+  background:#fff;border-radius:16px;padding:13px;
+  box-shadow:0 1px 3px rgba(26,23,20,.06),0 4px 16px rgba(26,23,20,.04);
+  animation:fsu .4s both
+}
+.adm-user{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.adm-em{font-size:22px}
+.adm-nm{font-size:13px;font-weight:700;color:var(--text)}
+.adm-bk{font-size:11px;color:var(--muted);margin-bottom:11px}
+.adm-acts{display:flex;gap:7px}
+.btn-app{
+  flex:1;background:var(--approved-light);color:var(--approved);
+  border:none;border-radius:11px;padding:9px;
+  font-family:'Heebo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;
+  position:relative;overflow:hidden;transition:all .2s
+}
+.btn-app.pressed{background:var(--approved);color:#fff;transform:scale(.97)}
+.btn-rej{
+  flex:1;background:var(--rejected-light);color:var(--rejected);
+  border:none;border-radius:11px;padding:9px;
+  font-family:'Heebo',sans-serif;font-size:12px;font-weight:700;cursor:pointer
+}
+.ripple{
+  position:absolute;border-radius:50%;background:rgba(5,150,105,.3);
+  width:40px;height:40px;margin-top:-20px;margin-left:-20px;
+  transform:scale(0);animation:rpl .7s ease-out forwards;pointer-events:none
+}
+@keyframes rpl{to{transform:scale(5);opacity:0}}
+
+/* ── SCENE 7  OUTRO ── */
+.outro-inner{
+  text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;
+  opacity:0;transform:scale(.9);transition:all .6s cubic-bezier(.34,1.56,.64,1)
+}
+.outro-inner.show{opacity:1;transform:scale(1)}
+.outro-car{font-size:clamp(48px,10vw,72px);animation:bounceIn .6s both}
+.outro-name{
+  font-size:clamp(20px,4vw,32px);font-weight:900;
+  background:linear-gradient(135deg,var(--primary),#A78BFA);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.outro-sub{font-size:12px;color:var(--muted)}
+.qr-box{
+  width:88px;height:88px;border:2px solid var(--border);border-radius:12px;
+  display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);
+  gap:2px;padding:7px;background:#fff
+}
+.qr-c{border-radius:1px;background:var(--text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pill-b{
+  background:var(--primary-light);color:var(--primary);border-radius:99px;
+  padding:5px 12px;font-size:11px;font-weight:700
+}
+
+/* ── SCENE 7 dual layout (phone + outro) ── */
+#s7-phone{transition:opacity .5s ease,transform .5s ease}
+#s7-phone.fade-out{opacity:0;transform:translateY(-16px)}
+#s7-outro{position:absolute;opacity:0;transition:opacity .6s .1s ease}
+#s7-outro.show{opacity:1}
+
+/* ── tablet / landscape fixes ── */
+@media(max-height:500px){
+  .dots{bottom:6px}
+  .caption{font-size:11px;padding:7px 14px;margin-top:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="demo-bg dark" id="bg">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="prog-track"><div class="prog-fill" id="prog"></div></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <button class="pause-btn" id="pauseBtn">⏸ השהה</button>
+</div>
+
+<!-- DOTS -->
+<div class="dots" id="dots">
+  <div class="dot active" data-i="0"></div>
+  <div class="dot" data-i="1"></div>
+  <div class="dot" data-i="2"></div>
+  <div class="dot" data-i="3"></div>
+  <div class="dot" data-i="4"></div>
+  <div class="dot" data-i="5"></div>
+  <div class="dot" data-i="6"></div>
+</div>
+
+<div class="stage">
+
+<!-- ════════════════════════════
+     SCENE 1 — INTRO
+════════════════════════════ -->
+<div class="scene active" id="s1">
+  <div class="intro">
+    <span class="intro-car">🚗</span>
+    <div class="intro-title">משפחה על גלגלים</div>
+    <div class="intro-tag">ניהול הרכב המשפחתי — פשוט, חכם, ביחד</div>
+    <div class="intro-badge">✨ הדגמת אפליקציה</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 2 — REGISTRATION
+════════════════════════════ -->
+<div class="scene" id="s2">
+  <div class="phone-scene">
+    <div class="phone-wrap" id="pw2">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+          <div class="p-body">
+            <div class="p-head">יצירת חשבון</div>
+            <div class="avatar-row">
+              <div class="av">👨</div>
+              <div class="av sel">👩</div>
+              <div class="av">👦</div>
+              <div class="av">👧</div>
+              <div class="av">🧓</div>
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">שם מלא</span>
+              <input id="reg-name" class="f-input focused tc" readonly value="" placeholder="שם מלא">
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">אימייל</span>
+              <input class="f-input" readonly value="rachel@family.com" placeholder="אימייל">
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">סיסמה</span>
+              <input class="f-input" readonly value="••••••••" placeholder="סיסמה" type="password">
+            </div>
+            <button class="btn-p">הצטרפות</button>
+          </div>
+          <div class="b-nav">
+            <div class="nav-item on"><div class="nav-i">🏠</div>בית</div>
+            <div class="nav-item"><div class="nav-i">📅</div>לוח</div>
+            <div class="nav-item"><div class="nav-plus">+</div></div>
+            <div class="nav-item"><div class="nav-i">📋</div>ההזמנות</div>
+            <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">כל בן משפחה נרשם בקלות עם אמוג'י אישי</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 3 — CALENDAR
+════════════════════════════ -->
+<div class="scene" id="s3">
+  <div class="phone-scene">
+    <div class="phone-wrap" id="pw3">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+          <div class="p-body">
+            <div class="p-head">לוח שבועי</div>
+            <div class="cal-days-row">
+              <div class="cal-dh">ש'</div><div class="cal-dh">א'</div>
+              <div class="cal-dh">ב'</div><div class="cal-dh">ג'</div>
+              <div class="cal-dh">ד'</div><div class="cal-dh">ה'</div>
+              <div class="cal-dh">ו'</div>
+            </div>
+            <div class="cal-grid">
+              <div class="cal-col"></div>
+              <div class="cal-col">
+                <div class="cal-blk o" id="cb-o" style="top:20px;height:80px">פגישה</div>
+              </div>
+              <div class="cal-col"></div>
+              <div class="cal-col">
+                <div class="cal-blk g" id="cb-g" style="top:40px;height:110px">טיול משפחתי</div>
+              </div>
+              <div class="cal-col"></div>
+              <div class="cal-col">
+                <div class="cal-blk v" id="cb-v" style="top:10px;height:90px">נסיעה לעבודה</div>
+              </div>
+              <div class="cal-col"></div>
+            </div>
+          </div>
+          <div class="b-nav">
+            <div class="nav-item"><div class="nav-i">🏠</div>בית</div>
+            <div class="nav-item on"><div class="nav-i">📅</div>לוח</div>
+            <div class="nav-item"><div class="nav-plus">+</div></div>
+            <div class="nav-item"><div class="nav-i">📋</div>ההזמנות</div>
+            <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">לוח שנה משפחתי — ראו מי משתמש ברכב ומתי</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 4 — NEW BOOKING FORM
+════════════════════════════ -->
+<div class="scene" id="s4">
+  <div class="phone-scene">
+    <div class="phone-wrap" id="pw4">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+          <div class="p-body">
+            <div class="p-head">הזמנה חדשה</div>
+            <div class="f-wrap">
+              <span class="f-label">כותרת</span>
+              <input id="bk-title" class="f-input focused tc" readonly value="" placeholder="לאן נוסעים?">
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">תאריך</span>
+              <div class="date-field">📅 יום שלישי, 28 אפריל 2026</div>
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">שעות</span>
+              <div class="time-row">
+                <div class="time-f">09:00</div>
+                <div style="display:flex;align-items:center;color:var(--muted);font-size:12px">—</div>
+                <div class="time-f">11:00</div>
+              </div>
+            </div>
+            <div class="f-wrap">
+              <span class="f-label">הערות (אופציונלי)</span>
+              <input class="f-input" readonly value="" placeholder="פרטים נוספים...">
+            </div>
+            <button class="btn-p" id="submit-btn">שלח בקשה</button>
+          </div>
+          <div class="b-nav">
+            <div class="nav-item"><div class="nav-i">🏠</div>בית</div>
+            <div class="nav-item"><div class="nav-i">📅</div>לוח</div>
+            <div class="nav-item on"><div class="nav-plus">+</div></div>
+            <div class="nav-item"><div class="nav-i">📋</div>ההזמנות</div>
+            <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">שולחים בקשה להזמנת הרכב בכמה שניות</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 5 — PENDING
+════════════════════════════ -->
+<div class="scene" id="s5">
+  <div class="phone-scene">
+    <div class="phone-wrap" id="pw5">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+          <div class="p-body">
+            <div class="p-head">ההזמנות שלי</div>
+            <div class="bk-card" id="pend-card">
+              <div class="bk-title">נסיעה לרופא</div>
+              <div class="bk-meta">📅 28 אפריל 2026 &nbsp;•&nbsp; 09:00–11:00</div>
+              <div class="s-pill pending" id="pend-pill">⏳ ממתין לאישור</div>
+            </div>
+          </div>
+          <div class="b-nav">
+            <div class="nav-item"><div class="nav-i">🏠</div>בית</div>
+            <div class="nav-item"><div class="nav-i">📅</div>לוח</div>
+            <div class="nav-item"><div class="nav-plus">+</div></div>
+            <div class="nav-item on"><div class="nav-i">📋</div>ההזמנות</div>
+            <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">הבקשה נשלחת לאישור האדמין בזמן אמת</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 6 — ADMIN APPROVAL
+════════════════════════════ -->
+<div class="scene" id="s6">
+  <div class="phone-scene">
+    <div class="phone-wrap" id="pw6">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+          <div class="p-body">
+            <div class="adm-head">
+              <span style="font-size:20px">👑</span>
+              <div class="adm-t">פאנל ניהול</div>
+            </div>
+            <div class="adm-card">
+              <div class="adm-user">
+                <div class="adm-em">👩</div>
+                <div class="adm-nm">רחל כהן</div>
+              </div>
+              <div class="adm-bk">נסיעה לרופא &nbsp;•&nbsp; 28.4 &nbsp;09:00–11:00</div>
+              <div style="margin-bottom:9px">
+                <div class="s-pill pending" id="adm-pill">⏳ ממתין לאישור</div>
+              </div>
+              <div class="adm-acts">
+                <button class="btn-app" id="app-btn">✅ אשר</button>
+                <button class="btn-rej">❌ דחה</button>
+              </div>
+            </div>
+          </div>
+          <div class="b-nav">
+            <div class="nav-item"><div class="nav-i">🏠</div>בית</div>
+            <div class="nav-item"><div class="nav-i">📅</div>לוח</div>
+            <div class="nav-item"><div class="nav-plus">+</div></div>
+            <div class="nav-item"><div class="nav-i">📋</div>ניהול</div>
+            <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">האדמין (אמא) מאשרת הזמנות בטאפ אחד</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCENE 7 — APPROVED + OUTRO
+════════════════════════════ -->
+<div class="scene" id="s7">
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+
+    <!-- Phone with updated calendar -->
+    <div class="phone-scene" id="s7-phone">
+      <div class="phone-wrap" id="pw7">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="notch"><div class="n-spk"></div><div class="n-cam"></div></div>
+            <div class="p-body">
+              <div class="p-head">לוח שבועי</div>
+              <div class="cal-days-row">
+                <div class="cal-dh">ש'</div><div class="cal-dh">א'</div>
+                <div class="cal-dh">ב'</div><div class="cal-dh">ג'</div>
+                <div class="cal-dh">ד'</div><div class="cal-dh">ה'</div>
+                <div class="cal-dh">ו'</div>
+              </div>
+              <div class="cal-grid">
+                <div class="cal-col"></div>
+                <div class="cal-col">
+                  <div class="cal-blk o" id="s7b-o" style="top:20px;height:80px">פגישה</div>
+                </div>
+                <div class="cal-col">
+                  <div class="cal-blk g" id="s7b-ng" style="top:70px;height:100px">נסיעה לרופא ✅</div>
+                </div>
+                <div class="cal-col">
+                  <div class="cal-blk g" id="s7b-g" style="top:40px;height:110px">טיול משפחתי</div>
+                </div>
+                <div class="cal-col"></div>
+                <div class="cal-col">
+                  <div class="cal-blk v" id="s7b-v" style="top:10px;height:90px">נסיעה לעבודה</div>
+                </div>
+                <div class="cal-col"></div>
+              </div>
+            </div>
+            <div class="b-nav">
+              <div class="nav-item"><div class="nav-i">🏠</div>בית</div>
+              <div class="nav-item on"><div class="nav-i">📅</div>לוח</div>
+              <div class="nav-item"><div class="nav-plus">+</div></div>
+              <div class="nav-item"><div class="nav-i">📋</div>ההזמנות</div>
+              <div class="nav-item"><div class="nav-i">👤</div>פרופיל</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTRO overlay -->
+    <div class="outro-inner" id="s7-outro" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px">
+      <div class="outro-car">🚗</div>
+      <div class="outro-name">משפחה על גלגלים</div>
+      <div class="outro-sub">נסה עכשיו — שתף את הקישור עם המשפחה</div>
+      <!-- QR placeholder -->
+      <div class="qr-box" id="qr"></div>
+      <div class="pills">
+        <div class="pill-b">⚡ בזמן אמת</div>
+        <div class="pill-b">🔒 מאובטח</div>
+        <div class="pill-b">👨‍👩‍👧 למשפחה</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /stage -->
+
+<script>
+// ── QR pattern (decorative) ──────────────────
+(function(){
+  const qr = document.getElementById('qr');
+  const pat = [
+    1,1,1,0,1,1,1,
+    1,0,1,0,1,0,1,
+    1,1,1,1,0,1,1,
+    0,1,0,0,0,1,0,
+    1,1,0,1,1,1,1,
+    1,0,1,0,1,0,1,
+    1,1,1,0,1,1,1,
+  ];
+  pat.forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='qr-c';
+    if(!v) c.style.opacity='0';
+    else c.style.animationDelay=(i*0.015)+'s';
+    qr.appendChild(c);
+  });
+})();
+
+// ── SCENES CONFIG ───────────────────────────
+const SCENES=[
+  {id:'s1',dur:4200,bg:'dark',dots:'dark'},
+  {id:'s2',dur:5000,bg:'light',dots:'light'},
+  {id:'s3',dur:5200,bg:'light',dots:'light'},
+  {id:'s4',dur:5500,bg:'light',dots:'light'},
+  {id:'s5',dur:4200,bg:'light',dots:'light'},
+  {id:'s6',dur:5500,bg:'light',dots:'light'},
+  {id:'s7',dur:5500,bg:'light',dots:'light'},
+];
+
+let cur=0, paused=false, timer=null, progStart=null, progDur=0;
+const dots=document.querySelectorAll('.dot');
+const prog=document.getElementById('prog');
+const bg=document.getElementById('bg');
+const pauseBtn=document.getElementById('pauseBtn');
+
+// ── PHONE SCALE ─────────────────────────────
+function updateScale(){
+  const padTop=52, padBot=110;
+  const availH=window.innerHeight-padTop-padBot;
+  const availW=window.innerWidth-32;
+  const sc=Math.min(availH/600,availW/290,1);
+  document.documentElement.style.setProperty('--ps',sc.toFixed(3));
+  // fix wrapper heights for each scene phone-wrap
+  document.querySelectorAll('.phone-wrap').forEach(el=>{
+    el.style.width=Math.round(290*sc)+'px';
+    el.style.height=Math.round(600*sc)+'px';
+  });
+}
+window.addEventListener('resize',updateScale);
+updateScale();
+
+// ── RESET helpers ───────────────────────────
+function resetAll(){
+  document.getElementById('reg-name').value='';
+  document.getElementById('reg-name').classList.add('tc');
+  document.getElementById('bk-title').value='';
+  document.getElementById('bk-title').classList.add('tc');
+  document.getElementById('submit-btn').classList.remove('pressed');
+  document.getElementById('submit-btn').style.transform='';
+  // cal scene 3
+  ['cb-o','cb-g','cb-v'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  // pending
+  document.getElementById('pend-card').classList.remove('show');
+  // admin
+  document.getElementById('adm-pill').className='s-pill pending';
+  document.getElementById('adm-pill').textContent='⏳ ממתין לאישור';
+  document.getElementById('app-btn').classList.remove('pressed');
+  document.querySelectorAll('.ripple').forEach(r=>r.remove());
+  // scene 7
+  ['s7b-o','s7b-g','s7b-v','s7b-ng'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('s7-phone').classList.remove('fade-out');
+  document.getElementById('s7-outro').classList.remove('show');
+}
+
+// ── TYPING ──────────────────────────────────
+function typeIn(el,text,delay,speed){
+  el.value='';
+  let i=0;
+  setTimeout(()=>{
+    const iv=setInterval(()=>{
+      el.value+=text[i++];
+      if(i>=text.length){clearInterval(iv);setTimeout(()=>el.classList.remove('tc'),400);}
+    },speed||75);
+  },delay||0);
+}
+
+// ── SCENE ANIMATIONS ────────────────────────
+function runAnims(i){
+  if(i===1){ // registration
+    typeIn(document.getElementById('reg-name'),'רחל כהן',700);
+  }
+  if(i===2){ // calendar
+    setTimeout(()=>document.getElementById('cb-o').classList.add('show'),400);
+    setTimeout(()=>document.getElementById('cb-g').classList.add('show'),900);
+    setTimeout(()=>document.getElementById('cb-v').classList.add('show'),1400);
+  }
+  if(i===3){ // booking form
+    typeIn(document.getElementById('bk-title'),'נסיעה לרופא',700);
+    setTimeout(()=>{
+      const b=document.getElementById('submit-btn');
+      b.classList.add('pressed');
+      setTimeout(()=>b.classList.remove('pressed'),250);
+    },4500);
+  }
+  if(i===4){ // pending card
+    setTimeout(()=>document.getElementById('pend-card').classList.add('show'),350);
+  }
+  if(i===5){ // admin approve
+    setTimeout(()=>{
+      const btn=document.getElementById('app-btn');
+      btn.classList.add('pressed');
+      const r=document.createElement('div');
+      r.className='ripple';
+      r.style.left='50%';r.style.top='50%';
+      btn.appendChild(r);
+      setTimeout(()=>r.remove(),800);
+    },2200);
+    setTimeout(()=>{
+      const p=document.getElementById('adm-pill');
+      p.className='s-pill approved';
+      p.textContent='✅ אושר';
+    },3000);
+  }
+  if(i===6){ // scene 7
+    setTimeout(()=>document.getElementById('s7b-o').classList.add('show'),200);
+    setTimeout(()=>document.getElementById('s7b-g').classList.add('show'),600);
+    setTimeout(()=>document.getElementById('s7b-v').classList.add('show'),1000);
+    setTimeout(()=>document.getElementById('s7b-ng').classList.add('show'),1400);
+    // transition to outro
+    setTimeout(()=>{
+      document.getElementById('s7-phone').classList.add('fade-out');
+      setTimeout(()=>document.getElementById('s7-outro').classList.add('show'),400);
+    },2600);
+  }
+}
+
+// ── SHOW SCENE ──────────────────────────────
+function showScene(i){
+  resetAll();
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  document.getElementById(SCENES[i].id).classList.add('active');
+  bg.className='demo-bg '+SCENES[i].bg;
+  const dark=SCENES[i].bg==='dark';
+  pauseBtn.className='pause-btn '+(dark?'':'light-mode');
+  dots.forEach((d,di)=>{
+    d.className='dot'+(SCENES[i].dots==='light'?' light':'')+(di===i?' active':'');
+  });
+  startProg(SCENES[i].dur);
+  runAnims(i);
+  if(timer) clearTimeout(timer);
+  if(!paused) timer=setTimeout(advance,SCENES[i].dur);
+}
+
+function advance(){if(!paused){cur=(cur+1)%SCENES.length;showScene(cur);}}
+
+// ── PROGRESS BAR ────────────────────────────
+function startProg(dur){
+  progDur=dur; progStart=Date.now();
+  prog.style.transition='none';prog.style.width='0%';
+  requestAnimationFrame(()=>{
+    prog.style.transition=`width ${dur}ms linear`;
+    prog.style.width='100%';
+  });
+}
+function pauseProg(){
+  const elapsed=Date.now()-progStart;
+  const pct=Math.min(100,elapsed/progDur*100);
+  prog.style.transition='none';prog.style.width=pct+'%';
+}
+function resumeProg(){
+  const pct=parseFloat(prog.style.width)||0;
+  const rem=progDur*(1-pct/100);
+  progStart=Date.now()-progDur*(pct/100);
+  prog.style.transition=`width ${rem}ms linear`;
+  prog.style.width='100%';
+  if(timer) clearTimeout(timer);
+  timer=setTimeout(advance,rem);
+}
+
+// ── PAUSE / PLAY ─────────────────────────────
+pauseBtn.addEventListener('click',()=>{
+  paused=!paused;
+  pauseBtn.innerHTML=paused?'▶ המשך':'⏸ השהה';
+  if(paused){clearTimeout(timer);pauseProg();}
+  else resumeProg();
+});
+
+// ── DOT NAVIGATION ───────────────────────────
+dots.forEach((d,i)=>{
+  d.addEventListener('click',()=>{clearTimeout(timer);cur=i;showScene(i);});
+});
+
+// ── KEYBOARD ────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key===' '||e.code==='Space'){e.preventDefault();pauseBtn.click();}
+  if(e.key==='ArrowRight'){clearTimeout(timer);cur=(cur-1+SCENES.length)%SCENES.length;showScene(cur);}
+  if(e.key==='ArrowLeft'){clearTimeout(timer);cur=(cur+1)%SCENES.length;showScene(cur);}
+});
+
+// ── TOUCH SWIPE ──────────────────────────────
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50){
+    clearTimeout(timer);
+    cur=dx>0?(cur-1+SCENES.length)%SCENES.length:(cur+1)%SCENES.length;
+    showScene(cur);
+  }
+},{passive:true});
+
+// ── START ────────────────────────────────────
+showScene(0);
+</script>
+</body>
+</html>
