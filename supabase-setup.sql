@@ -23,7 +23,7 @@ create table if not exists bookings (
   description text,
   start_time timestamptz not null,
   end_time timestamptz not null,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'cancelled')),
   admin_note text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()

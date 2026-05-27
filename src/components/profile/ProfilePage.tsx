@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useNotifications } from '../../contexts/NotificationsContext'
 import { supabase } from '../../lib/supabase'
 
 const EMOJI_OPTIONS = ['😊', '😎', '🤩', '😄', '🥳', '👦', '👧', '👨', '👩', '🧑', '👴', '👵', '🐱', '🦊', '🐼']
@@ -12,6 +13,7 @@ const COLOR_PALETTE = [
 
 export default function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth()
+  const { isSubscribed, subscribe } = useNotifications()
   const [name, setName] = useState(profile?.full_name ?? '')
   const [emoji, setEmoji] = useState(profile?.avatar_emoji ?? '😊')
   const [color, setColor] = useState(profile?.color ?? '#7C6FF7')
@@ -164,6 +166,25 @@ export default function ProfilePage() {
             <span className="text-[11px] font-bold text-textMuted tracking-widest uppercase">חבר מאז</span>
             <span className="text-sm font-medium text-textBase">{memberSince}</span>
           </div>
+        </div>
+
+        {/* ---- Notifications ---- */}
+        <div className="card p-5 mb-4 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{isSubscribed ? '🔔' : '🔕'}</span>
+            <div>
+              <p className="text-sm font-semibold text-textBase">התראות</p>
+              <p className="text-xs text-textMuted">{isSubscribed ? 'פעיל' : 'לא פעיל'}</p>
+            </div>
+          </div>
+          {!isSubscribed && (
+            <button
+              onClick={subscribe}
+              className="text-xs bg-primary-500 text-white font-semibold px-4 py-2 rounded-xl active:scale-95 transition-transform"
+            >
+              הפעל
+            </button>
+          )}
         </div>
 
         {/* ---- Error ---- */}
