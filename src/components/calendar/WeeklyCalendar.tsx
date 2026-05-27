@@ -68,9 +68,13 @@ function BookingDetailSheet({ booking, onClose }: { booking: Booking; onClose: (
   async function handleCancel() {
     if (!confirm('לבטל את ההזמנה המאושרת?')) return
     setCancelling(true)
-    await cancelBooking(booking.id)
+    const { error } = await cancelBooking(booking.id)
     setCancelling(false)
-    onClose()
+    if (error) {
+      alert('הביטול נכשל: ' + error.message)
+    } else {
+      onClose()
+    }
   }
 
   const start = new Date(booking.start_time)
@@ -239,7 +243,7 @@ export default function WeeklyCalendar({ onNavigate }: Props) {
 
   const selectedBookings = selected
     ? bookings
-        .filter(b => isSameDay(new Date(b.start_time), selected))
+        .filter(b => isSameDay(new Date(b.start_time), selected) && b.status !== 'cancelled')
         .sort((a, b) => +new Date(a.start_time) - +new Date(b.start_time))
     : []
 
@@ -368,7 +372,7 @@ function DayBody({
   onBookingClick: (b: Booking) => void
 }) {
   const dayBookings = allBookings
-    .filter(b => isSameDay(new Date(b.start_time), day))
+    .filter(b => isSameDay(new Date(b.start_time), day) && b.status !== 'cancelled')
     .sort((a, b) => +new Date(a.start_time) - +new Date(b.start_time))
 
   const now = new Date()

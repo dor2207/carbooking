@@ -45,28 +45,29 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   )
 
   const checkSubscription = useCallback(async () => {
-    if (!isPushSupported || !user || !VAPID_PUBLIC_KEY) return
+    if (!isPushSupported || !user) return
+    if (Notification.permission === 'denied') return
+    if (localStorage.getItem('push-dismissed')) return
+
     try {
-      const reg = await navigator.serviceWorker.ready
-      const existing = await reg.pushManager.getSubscription()
-      if (existing) {
-        setIsSubscribed(true)
-        setShowPrompt(false)
-        // Keep DB in sync in case it was lost
-        await saveSubscription(existing)
-        return
-      }
-      // No subscription — show prompt unless denied or dismissed
-      if (
-        Notification.permission !== 'denied' &&
-        !localStorage.getItem('push-dismissed')
-      ) {
-        // Small delay so the app renders first
-        setTimeout(() => setShowPrompt(true), 2000)
+      // Timeout so a broken SW doesn't block the prompt forever
+      const swReady = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+      ])
+      if (swReady) {
+        const existing = await (swReady as ServiceWorkerRegistration).pushManager.getSubscription()
+        if (existing) {
+          setIsSubscribed(true)
+          if (VAPID_PUBLIC_KEY) await saveSubscription(existing)
+          return
+        }
       }
     } catch {
-      // Silently fail — push is non-critical
+      // SW error — still show the prompt
     }
+
+    setTimeout(() => setShowPrompt(true), 1500)
   }, [user, saveSubscription])
 
   useEffect(() => {

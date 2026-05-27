@@ -28,7 +28,6 @@ export default function MyBookingsPage({ onNavigate }: Props) {
   const pending   = myBookings.filter(b => b.status === 'pending')
   const approved  = myBookings.filter(b => b.status === 'approved')
   const rejected  = myBookings.filter(b => b.status === 'rejected')
-  const cancelled = myBookings.filter(b => b.status === 'cancelled')
 
   async function handleDelete(id: string) {
     if (confirm('למחוק את הבקשה?')) {
@@ -85,12 +84,6 @@ export default function MyBookingsPage({ onNavigate }: Props) {
                 <p className="text-[10px] text-rejected-text font-semibold mt-0.5">נדחו</p>
               </div>
             )}
-            {cancelled.length > 0 && (
-              <div className="flex-1 bg-gray-100 rounded-2xl px-3 py-2 text-center">
-                <p className="text-xl font-extrabold text-gray-400 leading-none">{cancelled.length}</p>
-                <p className="text-[10px] text-gray-400 font-semibold mt-0.5">בוטלו</p>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -114,7 +107,6 @@ export default function MyBookingsPage({ onNavigate }: Props) {
               { list: pending,   key: 'pending'   as const },
               { list: approved,  key: 'approved'  as const },
               { list: rejected,  key: 'rejected'  as const },
-              { list: cancelled, key: 'cancelled' as const },
             ]).map(({ list, key }) => list.length > 0 && (
               <section key={key}>
                 <div className="flex items-center gap-2 mb-3">
